@@ -58,9 +58,6 @@ if __name__ == '__main__':
     num_epochs = args.num_epochs
     batch_size = args.batch_size
     learning_rate = args.learning_rate
-    exp_path = args.exp_path
-    lookup_path = args.lookup_path
-    shRNA_path = args.shRNA_path
     plot_every = args.plot_every
     
     result_img_name = 'train'

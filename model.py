@@ -27,9 +27,7 @@ class VanillaEncoder(nn.Module):
         self.MLP_ft = nn.Linear(512,256)
 
     def forward(self, exp, pos=None, neg=None, finetune = False):
-
         for i in range(self.num_layer-1):
-            
             exp = self.dropout(self.activation(self.MLP[i](exp)))
             
             if finetune == True:

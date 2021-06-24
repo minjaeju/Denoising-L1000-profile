@@ -9,10 +9,10 @@ import pickle
 import random
 from tqdm import tqdm
 
-def get_posneg_samples(tensor, exp, lookup_path, shRNA_path, shRNA_dict_path, seed_sim_path, batch, samples):
+def get_posneg_samples(tensor, exp, lookup_path, shRNA_dict_path, seed_sim_path, samples):
     
+    batch = tensor[0].shape[0]
     lookup = pd.read_csv(lookup_path)
-    shRNA = pd.read_csv(shRNA_path)
     with open(shRNA_dict_path, 'rb') as f:
         shRNA_dict = pickle.load(f)
     with open(seed_sim_path, 'rb') as f:

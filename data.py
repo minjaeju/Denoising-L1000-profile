@@ -46,3 +46,12 @@ def get_loader(dataset, sampler, batch_size):
                                               collate_fn=collate_fn,
                                               sampler=sampler)
     return data_loader
+
+def get_loader_infer(dataset, batch_size):
+
+    data_loader = torch.utils.data.DataLoader(dataset=dataset,
+                                              batch_size=batch_size,
+                                              shuffle=False,
+                                              collate_fn=collate_fn)
+
+    return data_loader

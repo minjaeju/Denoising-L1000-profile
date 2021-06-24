@@ -13,5 +13,4 @@ class TripletLoss(nn.Module):
         #distance_negative = F.cosine_similarity(anchor.unsqueeze(1), neg, dim=2)
         #losses = F.relu(-(distance_positive.unsqueeze(1) - distance_negative - self.margin))
         losses = F.relu(-(distance_positive - distance_negative - self.margin))
-        import pdb; pdb.set_trace()
         return losses.mean() if size_average else losses.sum()

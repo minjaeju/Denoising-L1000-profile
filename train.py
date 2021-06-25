@@ -32,8 +32,8 @@ parser.add_argument('--test_mode', type=bool, default=False)
 
 parser.add_argument('--k_folds', type=int, default=5,
                     help='number of folds for cross validation (default: 5)')
-parser.add_argument('--num_epochs', type=int, default=1000,
-                    help='number of epochs (default: 500)')
+parser.add_argument('--num_epochs', type=int, default=250,
+                    help='number of epochs (default: 250)')
 parser.add_argument('--batch_size', type=int, default=500,
                     help='size of batch (default: 100)')
 parser.add_argument('--learning_rate', type=float, default=1e-5,
@@ -42,13 +42,13 @@ parser.add_argument('--learning_rate', type=float, default=1e-5,
 parser.add_argument('--train_exp_path', default='./data/exp/exp_train.pkl',
                     help='path for train exp (default: ./data/exp/exp_train.pkl')
 parser.add_argument('--test_exp_path', default='./data/exp/exp_test.pkl',
-                    help='path for train exp (default: ./data/exp/exp_test.pkl')
+                    help='path for test exp (default: ./data/exp/exp_test.pkl')
 parser.add_argument('--train_lookup_path', default='./data/lookup/lookup_train.csv',
-                    help='path for train exp (default: ./data/lookup/lookup_train.csv')
+                    help='path for train lookup (default: ./data/lookup/lookup_train.csv')
 parser.add_argument('--test_lookup_path', default='./data/lookup/lookup_test.csv',
-                    help='path for train exp (default: ./data/lookup/lookup_test.csv')
+                    help='path for test lookup (default: ./data/lookup/lookup_test.csv')
 #parser.add_argument('--shRNA_path', default='./data/shRNA/shRNA_processed.csv')
-parser.add_argument('--model_path', default='./model/AE/210621-184852/',
+parser.add_argument('--model_path', default='./model/AE/210625-124435/',
                     help='path for pretrained model')
 
 parser.add_argument('--plot_every', type=int, default=50,
@@ -106,7 +106,7 @@ if __name__ == '__main__':
             corr_list = []
             model.eval()
             with torch.no_grad():
-                np_embed = np.zeros((len(test_dataset),256))
+                np_embed = np.zeros((len(test_dataset), 256))
                 shRNA, cell, gene = [], [], []
                 k = 0
                 for i, data in enumerate(tqdm(testloader, 0)):

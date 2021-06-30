@@ -35,7 +35,7 @@ parser.add_argument('--test_mode', type=bool, default=False)
 parser.add_argument('--finetune', default=True)
 parser.add_argument('--k_folds', type=int, default=5,
                     help='number of folds for cross validation (default: 5)')
-parser.add_argument('--num_epochs', type=int, default=1,
+parser.add_argument('--num_epochs', type=int, default=200,
                     help='number of epochs (default: 500)')
 parser.add_argument('--batch_size', type=int, default=500,
                     help='size of batch (default: 100)')
@@ -44,24 +44,24 @@ parser.add_argument('--learning_rate', type=float, default=1e-5,
 
 parser.add_argument('--train_exp_path', default='./data/exp/exp_train.pkl',
                     help='path for train exp (default: ./data/exp/exp_train.pkl')
-parser.add_argument('--test_exp_path', default='./data/exp/exp_test.pkl',
+parser.add_argument('--test_exp_path', default='./data/exp/exp_test_ex.pkl',
                     help='path for test exp (default: ./data/exp/exp_test.pkl')
 parser.add_argument('--train_lookup_path', default='./data/lookup/lookup_train.csv',
                     help='path for train lookup (default: ./data/lookup/lookup_train.csv')
-parser.add_argument('--test_lookup_path', default='./data/lookup/lookup_test.csv',
+parser.add_argument('--test_lookup_path', default='./data/lookup/lookup_test_ex.csv',
                     help='path for test lookup (default: ./data/lookup/lookup_test.csv')
 
 parser.add_argument('--neg_samples', type=int, default=3,
                     help='number of negative samples (default: 3)')
 parser.add_argument('--margin', type=int, default=1)
-parser.add_argument('--model_path', default='./model/AE/210625-124435/',
+parser.add_argument('--model_path', default='./model/EN/210629-152726_ft/',
                     help='path for pretrained model')
 
 parser.add_argument('--shRNA_path', default='./data/shRNA/shRNA_processed.csv')
 parser.add_argument('--shRNA_dict', default='./data/shRNA/RNA_dict.pkl')
 parser.add_argument('--seed_similarity', default='./data/shRNA/seed_similarity_7mer.pkl')
 
-parser.add_argument('--plot_every', type=int, default=1,
+parser.add_argument('--plot_every', type=int, default=50,
                     help='number of epochs for plotting (default: 50)')
 parser.add_argument('--print_every', type=int, default=1,
                     help='number of epochs for printing losses for plot (default: 1)')
@@ -103,7 +103,7 @@ if __name__ == '__main__':
             
             model = VanillaEncoder().to(device)
             
-            model_path = f'{args.model_path}encoder_fold{fold}.pth'
+            model_path = f'{args.model_path}model_fold{fold}_ft.pth'
             checkpoint = torch.load(model_path)
             model.load_state_dict(checkpoint)
             
@@ -111,33 +111,34 @@ if __name__ == '__main__':
             model.eval()
             with torch.no_grad():
                 np_embed = np.zeros((len(test_dataset), 256))
-                shRNA, cell, gene = [], [], []
+                shRNA, cell, gene, index = [], [], [], []
                 k = 0
                 for i, data in enumerate(tqdm(testloader, 0)):
                     tensor_list = data
                     shRNA.extend(tensor_list[2])
                     cell.extend(tensor_list[3])
                     gene.extend(tensor_list[4])
-                    
-                    pos, neg = get_posneg_samples(tensor_list, exp, args.lookup_path,args.shRNA_dict,args.seed_similarity,args.neg_samples)
+                    index.extend(tensor_list[5])
+                    """
+                    pos, neg = get_posneg_samples(tensor_list, test_exp, args.test_lookup_path,args.shRNA_dict,args.seed_similarity,args.neg_samples)
                     
                     print('-------- Calculating TripletLoss --------')
-                    
-                    anchor_embed, pos_embed, neg_embed = model(tensor_list[0], pos.to(device), neg.to(device),args.finetune)
+                    """
+                    anchor_embed = model(tensor_list[0]).cpu().detach().numpy()
                     np_embed[k:k+anchor_embed.shape[0],:] = anchor_embed
                     k = k+anchor_embed.shape[0]
-                    
+                    """
                     for j in tqdm(range(args.neg_samples)):
                         losses = criterion(anchor_embed, pos_embed[:,j,:], neg_embed[:,j,:])   
                         test_loss += losses.item()
-                        
-                labels = {'shRNA' : shRNA, 'cell' : cell, 'gene' : gene}
+                    """    
+                labels = {'shRNA' : shRNA, 'cell' : cell, 'gene' : gene, 'index' : index}
                     
                 with open(f'./result/embedding/embedding_ft{fold}.pkl', 'wb') as f:
                     pickle.dump(np_embed, f)
                 with open(f'./result/embedding/labels_ft{fold}.pkl', 'wb') as f:
                     pickle.dump(labels, f)    
-    
+                """
                 print('test_loss of fold: %.4f' % (test_loss/len(testloader)))
                 print('-----------------------------------')
                 results[fold] = test_loss/len(testloader)
@@ -148,7 +149,7 @@ if __name__ == '__main__':
                     (f, results[f]))
             print('%d folds test loss: %.4f' \
                 % ((fold+1), sum(results.values())/len(results.items())))
-    
+                """
     
     else:
         result_img_name = 'finetune'
@@ -202,8 +203,8 @@ if __name__ == '__main__':
             train_subsampler = torch.utils.data.SubsetRandomSampler(train_index)
             valid_subsampler = torch.utils.data.SubsetRandomSampler(valid_index)
     
-            trainloader = get_loader(dataset, train_subsampler, batch_size)
-            validloader = get_loader(dataset, valid_subsampler, batch_size)
+            trainloader = get_loader(train_dataset, train_subsampler, batch_size)
+            validloader = get_loader(train_dataset, valid_subsampler, batch_size)
             #import pdb; pdb.set_trace()
             model = VanillaEncoder()
         
@@ -231,8 +232,8 @@ if __name__ == '__main__':
                 for i, data in enumerate(tqdm(trainloader, 0)):
                 
                     tensor_list = data
-
-                    pos, neg = get_posneg_samples(tensor_list, exp, args.lookup_path,args.shRNA_dict,args.seed_similarity,args.neg_samples)
+                    #import pdb; pdb.set_trace()
+                    pos, neg = get_posneg_samples(tensor_list, train_exp, args.train_lookup_path,args.shRNA_dict,args.seed_similarity,args.neg_samples)
                 
                     print('-------- Calculating TripletLoss --------')
                                     
@@ -253,7 +254,7 @@ if __name__ == '__main__':
                 for i, data in enumerate(validloader, 0):
                     tensor_list = data
                 
-                    pos, neg = get_posneg_samples(tensor_list, exp, args.lookup_path,args.shRNA_dict,args.seed_similarity,args.neg_samples)
+                    pos, neg = get_posneg_samples(tensor_list, train_exp, args.train_lookup_path,args.shRNA_dict,args.seed_similarity,args.neg_samples)
                 
                     print('-------- Calculating TripletLoss --------')
                     
@@ -292,14 +293,14 @@ if __name__ == '__main__':
             checkpoint = torch.load(save_path)
             model.load_state_dict(checkpoint)
         
-            val_loss = 0.0
+            test_loss = 0.0
             model.eval()
             with torch.no_grad():
                         
                 for i, data in enumerate(tqdm(testloader, 0)):
                     tensor_list = data
                 
-                    pos, neg = get_posneg_samples(tensor_list, exp, args.lookup_path,args.shRNA_dict,args.seed_similarity,args.neg_samples)
+                    pos, neg = get_posneg_samples(tensor_list, test_exp, args.test_lookup_path,args.shRNA_dict,args.seed_similarity,args.neg_samples)
                 
                     print('-------- Calculating TripletLoss --------')
                   
@@ -308,11 +309,11 @@ if __name__ == '__main__':
                     for j in tqdm(range(args.neg_samples)):
                         losses = criterion(anchor_embed, pos_embed[:,j,:], neg_embed[:,j,:])   
                     
-                        val_loss += losses.item()
+                        test_loss += losses.item()
             
-                print('test_loss of fold: %.4f' % (val_loss/len(testloader)))
+                print('test_loss of fold: %.4f' % (test_loss/len(testloader)))
                 print('-----------------------------------')
-                results[fold] = val_loss/len(testloader)
+                results[fold] = test_loss/len(testloader)
             print(f'K-Fold CV Results of {k_folds} Folds')
             print('-----------------------------------')
             for f in range(fold+1):

@@ -17,7 +17,7 @@ class Dataset_AE(data.Dataset):
         shRNA = self.table.iloc[index]['pert_mfc_id']
         cell = self.table.iloc[index]['cell_mfc_name']
         gene = self.table.iloc[index]['cmap_name']
-
+        #print(index)
         assert np.array_equal(src_profile, trg_profile) == True
         
         return src_profile, trg_profile, shRNA, cell, gene, index       

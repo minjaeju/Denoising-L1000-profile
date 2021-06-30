@@ -34,21 +34,21 @@ parser.add_argument('--k_folds', type=int, default=5,
                     help='number of folds for cross validation (default: 5)')
 parser.add_argument('--num_epochs', type=int, default=250,
                     help='number of epochs (default: 250)')
-parser.add_argument('--batch_size', type=int, default=500,
+parser.add_argument('--batch_size', type=int, default=200,
                     help='size of batch (default: 100)')
 parser.add_argument('--learning_rate', type=float, default=1e-5,
                     help='learning rate (default: 1e-5)')
 
 parser.add_argument('--train_exp_path', default='./data/exp/exp_train.pkl',
                     help='path for train exp (default: ./data/exp/exp_train.pkl')
-parser.add_argument('--test_exp_path', default='./data/exp/exp_test.pkl',
+parser.add_argument('--test_exp_path', default='./data/exp/exp_test_ex.pkl',
                     help='path for test exp (default: ./data/exp/exp_test.pkl')
 parser.add_argument('--train_lookup_path', default='./data/lookup/lookup_train.csv',
                     help='path for train lookup (default: ./data/lookup/lookup_train.csv')
-parser.add_argument('--test_lookup_path', default='./data/lookup/lookup_test.csv',
+parser.add_argument('--test_lookup_path', default='./data/lookup/lookup_test_ex.csv',
                     help='path for test lookup (default: ./data/lookup/lookup_test.csv')
 #parser.add_argument('--shRNA_path', default='./data/shRNA/shRNA_processed.csv')
-parser.add_argument('--model_path', default='./model/AE/210625-124435/',
+parser.add_argument('--model_path', default='./model/AE/210625-173704/',
                     help='path for pretrained model')
 
 parser.add_argument('--plot_every', type=int, default=50,
@@ -107,13 +107,14 @@ if __name__ == '__main__':
             model.eval()
             with torch.no_grad():
                 np_embed = np.zeros((len(test_dataset), 256))
-                shRNA, cell, gene = [], [], []
+                shRNA, cell, gene, index = [], [], [], []
                 k = 0
                 for i, data in enumerate(tqdm(testloader, 0)):
                     tensor_list = data
                     shRNA.extend(tensor_list[2])
                     cell.extend(tensor_list[3])
                     gene.extend(tensor_list[4])
+                    index.extend(tensor_list[5])
                     embedding = encoder(tensor_list[0]).cpu().detach().numpy()
                     np_embed[k:k+embedding.shape[0],:] = embedding
                     output = model(tensor_list[0])
@@ -126,7 +127,7 @@ if __name__ == '__main__':
                         cor, p = scipy.stats.pearsonr(list(output.view(-1).cpu().detach().numpy()), list(tensor_list[1].view(-1).cpu().detach().numpy()))
                         corr_list.append(cor)
                         
-                labels = {'shRNA' : shRNA, 'cell' : cell, 'gene' : gene}
+                labels = {'shRNA' : shRNA, 'cell' : cell, 'gene' : gene, 'index' : index}
                 
                 with open(f'./result/embedding/embedding{fold}.pkl', 'wb') as f:
                     pickle.dump(np_embed, f)

@@ -30,7 +30,7 @@ def get_posneg_samples(tensor, exp, lookup_path, shRNA_dict_path, seed_sim_path,
         anchor_shRNA = tensor[2][i]
         while True:
             if len(lookup[lookup['cmap_name'] == anchor_target].index.tolist()) < samples:
-                pos_idx = [tensor[5],tensor[5],tensor[5]]
+                pos_idx = [tensor[5][i],tensor[5][i],tensor[5][i]]
                 break
             else:
                 pos_idx = random.sample(lookup[lookup['cmap_name'] == anchor_target].index.tolist(), samples)
@@ -42,10 +42,14 @@ def get_posneg_samples(tensor, exp, lookup_path, shRNA_dict_path, seed_sim_path,
             idx_shRNA_neg = torch.multinomial(torch.tensor(seed_similarity[idx_shRNA,:]+7), samples)
             if idx_shRNA not in list(idx_shRNA_neg) and set(idx_shRNA_neg.tolist()) & set(shRNA_idx_indata) == set(idx_shRNA_neg.tolist()):
                 break
-        
+        print('pos_idx:', pos_idx)
+        print('pos_exp:', exp[pos_idx].shape)
         pos[i] = torch.tensor(exp[pos_idx])
+        
         shRNA_neg = [shRNA for shRNA, value in shRNA_dict.items() if value in idx_shRNA_neg]
         neg_idx = random.sample(lookup[lookup['pert_mfc_id'].isin (shRNA_neg)].index.tolist(),samples)
+        print('neg_idx:', neg_idx)
+        print('neg_exp:', exp[neg_idx].shape)
         neg[i] = torch.tensor(exp[neg_idx])
         
     return pos, neg

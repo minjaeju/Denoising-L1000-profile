@@ -54,12 +54,15 @@ parser.add_argument('--test_lookup_path', default='./data/lookup/lookup_test_ex.
 parser.add_argument('--neg_samples', type=int, default=3,
                     help='number of negative samples (default: 3)')
 parser.add_argument('--margin', type=int, default=1)
-parser.add_argument('--model_path', default='./model/EN/210629-152726_ft/',
+parser.add_argument('--model_path', default='./model/AE/210625-173704/',
+                    help='path for pretrained model')
+parser.add_argument('--model_path_test', default='./model/EN/210629-152726_ft/',
                     help='path for pretrained model')
 
 parser.add_argument('--shRNA_path', default='./data/shRNA/shRNA_processed.csv')
 parser.add_argument('--shRNA_dict', default='./data/shRNA/RNA_dict.pkl')
 parser.add_argument('--seed_similarity', default='./data/shRNA/seed_similarity_7mer.pkl')
+parser.add_argument('--seed_dict', default='./data/shRNA/seed_dict.pkl')
 
 parser.add_argument('--plot_every', type=int, default=50,
                     help='number of epochs for plotting (default: 50)')
@@ -103,7 +106,7 @@ if __name__ == '__main__':
             
             model = VanillaEncoder().to(device)
             
-            model_path = f'{args.model_path}model_fold{fold}_ft.pth'
+            model_path = f'{args.model_path_test}model_fold{fold}_ft.pth'
             checkpoint = torch.load(model_path)
             model.load_state_dict(checkpoint)
             
@@ -233,7 +236,7 @@ if __name__ == '__main__':
                 
                     tensor_list = data
                     #import pdb; pdb.set_trace()
-                    pos, neg = get_posneg_samples(tensor_list, train_exp, args.train_lookup_path,args.shRNA_dict,args.seed_similarity,args.neg_samples)
+                    pos, neg = get_posneg_samples(tensor_list, train_exp, args.train_lookup_path,args.shRNA_dict,args.seed_similarity,args.seed_dict,args.neg_samples)
                 
                     print('-------- Calculating TripletLoss --------')
                                     
@@ -254,7 +257,7 @@ if __name__ == '__main__':
                 for i, data in enumerate(validloader, 0):
                     tensor_list = data
                 
-                    pos, neg = get_posneg_samples(tensor_list, train_exp, args.train_lookup_path,args.shRNA_dict,args.seed_similarity,args.neg_samples)
+                    pos, neg = get_posneg_samples(tensor_list, train_exp, args.train_lookup_path,args.shRNA_dict,args.seed_similarity,args.seed_dict,args.neg_samples)
                 
                     print('-------- Calculating TripletLoss --------')
                     
@@ -300,7 +303,7 @@ if __name__ == '__main__':
                 for i, data in enumerate(tqdm(testloader, 0)):
                     tensor_list = data
                 
-                    pos, neg = get_posneg_samples(tensor_list, test_exp, args.test_lookup_path,args.shRNA_dict,args.seed_similarity,args.neg_samples)
+                    pos, neg = get_posneg_samples(tensor_list, test_exp, args.test_lookup_path,args.shRNA_dict,args.seed_similarity,args.seed_dict,args.neg_samples)
                 
                     print('-------- Calculating TripletLoss --------')
                   

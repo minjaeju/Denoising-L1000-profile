@@ -33,10 +33,12 @@ def get_posneg_samples(tensor, exp, lookup_path, shRNA_dict_path, seed_sim_path,
         anchor_shRNA = tensor[2][i]
         if len(lookup[lookup['cmap_name'] == anchor_target].index.tolist()) <= samples:
             pos_idx = lookup[lookup['cmap_name'] == anchor_target].index.tolist()
-            while True:
-                pos_idx.append(tensor[5][i])
-                if len(pos_idx) == samples:
-                    break
+
+            if len(pos_idx) != samples:
+                while True:
+                    pos_idx.append(tensor[5][i])
+                    if len(pos_idx) == samples:
+                        break
         else:
             while True:
                 pos_idx = random.sample(lookup[lookup['cmap_name'] == anchor_target].index.tolist(), samples)

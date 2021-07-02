@@ -51,12 +51,12 @@ parser.add_argument('--train_lookup_path', default='./data/lookup/lookup_train.c
 parser.add_argument('--test_lookup_path', default='./data/lookup/lookup_test_ex.csv',
                     help='path for test lookup (default: ./data/lookup/lookup_test.csv')
 
-parser.add_argument('--neg_samples', type=int, default=3,
+parser.add_argument('--neg_samples', type=int, default=5,
                     help='number of negative samples (default: 3)')
 parser.add_argument('--margin', type=int, default=1)
 parser.add_argument('--model_path', default='./model/AE/210625-173704/',
                     help='path for pretrained model')
-parser.add_argument('--model_path_test', default='./model/EN/210629-152726_ft/',
+parser.add_argument('--model_path_test', default='./model/EN/210701-143440_ft/',
                     help='path for pretrained model')
 
 parser.add_argument('--shRNA_path', default='./data/shRNA/shRNA_processed.csv')

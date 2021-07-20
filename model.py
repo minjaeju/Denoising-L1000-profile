@@ -4,8 +4,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
 
-#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 def init_hidden_he(layer):
     layer.apply(init_relu)
 
@@ -82,3 +80,39 @@ class VanillaAE(nn.Module):
         profile_recon = self.decoder(profile_embed)
 
         return profile_recon
+    
+#MJnet Encoder    
+    
+class MJnetEN(nn.Module):
+    def __init__(self):
+        super(MJnetEN, self).__init__()
+        self.profile_encoder = ProfileEncoder()
+    def forward(self, exp, pos=None, neg=None, finetune=False):
+        if finetune == True:
+            anchor = self.profile_encoder(exp)
+            positive = self.profile_encoder(pos)
+            negative = self.profile_encoder(neg)
+            
+            return anchor, positive, negative
+        else:
+            anchor = self.profile_encoder(exp)
+            
+            return anchor
+
+class ProfileEncoder(nn.Module):
+    def __init__(self):
+        super(ProfileEncoder, self).__init__()
+        self.num_layer = 4
+        self.hidden_state = [978, 2048, 1024, 512, 256]
+        self.act_func = nn.ReLU()
+        self.dropout = nn.Dropout(0.2)
+        self.MLP_profile = nn.ModuleList(
+            [nn.Linear(self.hidden_state[i], self.hidden_state[i + 1]) for i in range(self.num_layer)])
+        init_hidden_he(self.MLP_profile)
+    def forward(self, profile):
+        for i in range(self.num_layer):
+            if i != self.num_layer - 1:
+                profile = self.dropout(self.act_func(self.MLP_profile[i](profile)))
+            else:
+                profile = self.MLP_profile[i](profile)
+        return profile

@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.utils.data as data
 
+
 class Dataset_AE(data.Dataset):
     
     def __init__(self, profile, lookup_table):

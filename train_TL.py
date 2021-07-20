@@ -44,21 +44,21 @@ parser.add_argument('--learning_rate', type=float, default=1e-5,
 
 parser.add_argument('--train_exp_path', default='./data/exp/exp_train.pkl',
                     help='path for train exp (default: ./data/exp/exp_train.pkl')
-parser.add_argument('--test_exp_path', default='./data/exp/exp_test_ex.pkl',
+parser.add_argument('--test_exp_path', default='./data/exp/exp_train.pkl',
                     help='path for test exp (default: ./data/exp/exp_test.pkl')
 parser.add_argument('--train_lookup_path', default='./data/lookup/lookup_train.csv',
                     help='path for train lookup (default: ./data/lookup/lookup_train.csv')
-parser.add_argument('--test_lookup_path', default='./data/lookup/lookup_test_ex.csv',
+parser.add_argument('--test_lookup_path', default='./data/lookup/lookup_train.csv',
                     help='path for test lookup (default: ./data/lookup/lookup_test.csv')
 
 parser.add_argument('--neg_samples', type=int, default=5,
                     help='number of negative samples (default: 3)')
-parser.add_argument('--margin', type=int, default=1)
+parser.add_argument('--margin', type=int, default=0)
 #parser.add_argument('--model_path', default='./model/AE/210625-173704/',
 #                    help='path for pretrained model')
 parser.add_argument('--model_path', default='./model/mjnet/base_double_triple_i1_mrr_best.pth',
                     help='path for pretrained model')
-parser.add_argument('--model_path_test', default='./model/EN/210705-150233_ft/',
+parser.add_argument('--model_path_test', default='./model/EN/210707-104013/',
                     help='path for pretrained model')
 #parser.add_argument('--model_path_test', default='./model/mjnet/base_double_triple_i1_mrr_best.pth',
 #                    help='path for pretrained model')
@@ -108,9 +108,9 @@ if __name__ == '__main__':
             
             print('-------- Starting testing --------')
             
-            #model = VanillaEncoder().to(device)
-            model = MJnetEN().to(device)
-            model_path = f'{args.model_path_test}model_fold{fold}_ft.pth'
+            model = VanillaEncoder().to(device)
+            #model = MJnetEN().to(device)
+            model_path = f'{args.model_path_test}model_fold{fold}.pth'
             #model_path = args.model_path_test
             checkpoint = torch.load(model_path)
             model.load_state_dict(checkpoint,strict=False)
@@ -142,9 +142,9 @@ if __name__ == '__main__':
                     """    
                 labels = {'shRNA' : shRNA, 'cell' : cell, 'gene' : gene, 'index' : index}
                     
-                with open(f'./result/embedding/embedding_ft{fold}.pkl', 'wb') as f:
+                with open(f'./result/embedding/embedding_TL_0{fold}.pkl', 'wb') as f:
                     pickle.dump(np_embed, f)
-                with open(f'./result/embedding/labels_ft{fold}.pkl', 'wb') as f:
+                with open(f'./result/embedding/labels_TL_0{fold}.pkl', 'wb') as f:
                     pickle.dump(labels, f)    
                 """
                 print('test_loss of fold: %.4f' % (test_loss/len(testloader)))
@@ -160,9 +160,9 @@ if __name__ == '__main__':
                 """
     
     else:
-        result_img_name = 'finetune'
-        save_model_path = f'./model/EN/{cur_date}_ft/'
-        save_result_path = f'./result/EN/{cur_date}_ft/'
+        result_img_name = 'train'
+        save_model_path = f'./model/EN/{cur_date}_{args.margin}/'
+        save_result_path = f'./result/EN/{cur_date}_{args.margin}/'
         
         with open(args.train_exp_path, 'rb') as f:
             train_exp = pickle.load(f)
@@ -208,20 +208,12 @@ if __name__ == '__main__':
             trainloader = get_loader(train_dataset, train_subsampler, batch_size)
             validloader = get_loader(train_dataset, valid_subsampler, batch_size)
             
-            #model = VanillaEncoder()
-            model = MJnetEN()
+            model = VanillaEncoder().to(device)
+            #model = MJnetEN()
             
             #model_path = f'{args.model_path}model_fold{fold}.pth'
-            model_path = args.model_path
-            checkpoint = torch.load(model_path)
-            model.load_state_dict(checkpoint,strict=False)
-            for param in model.parameters():            
-                param.requires_grad = False
-            
-            model.profile_encoder.MLP_profile[3] = nn.Linear(512,256)
-        
-            model = model.to(device)
-            optimizer = torch.optim.Adam(model.profile_encoder.MLP_profile[3].parameters(), lr=learning_rate)
+
+            optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
             for epoch in range(1, num_epochs+1):
             
                 loss = 0.0
@@ -240,6 +232,7 @@ if __name__ == '__main__':
                                     
                     anchor_embed, pos_embed, neg_embed = model(tensor_list[0], pos.to(device), neg.to(device), args.finetune)
                     losses = criterion(anchor_embed, pos_embed, neg_embed)
+                    print('BatchIndex:', i, 'TLoss:', round(losses.item(),4))
                     losses.backward()
                     optimizer.step()
                   
@@ -268,7 +261,7 @@ if __name__ == '__main__':
                 avg_vlosses.append(avg_vloss)
             
                 # Save model
-                save_path = save_model_path + f'/model_fold{fold}_ft.pth'
+                save_path = save_model_path + f'/model_fold{fold}.pth'
                 torch.save(model.state_dict(), save_path)
 
                 # Plot

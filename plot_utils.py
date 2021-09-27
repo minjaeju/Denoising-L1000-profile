@@ -1,32 +1,34 @@
 from __future__ import unicode_literals, print_function, division
-import unicodedata
-import string
-import re
-import random
+from pdb import set_trace
 
 import time
 import math
 
-import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-import matplotlib.dates as dates
+from matplotlib.ticker import MaxNLocator
+
 import os
 
-import torch
-import torch.nn as nn
-from torch import optim
-import torch.nn.functional as F
-
     
-def show_plot(points, plot_every, fold, save_path='./result', file_name='train', save_as_img=True):
-    plt.figure()
-    fig, ax = plt.subplots()
-#     loc = ticker.MultipleLocator(base=0.2)
-#     ax.yaxis.set_major_locator(loc)
-    plt.title('%s %d fold loss' % (file_name, fold))
-    x = list(range(1, len(points)*plot_every+1, plot_every))
-    plt.plot(x, points)
+def show_plot(train_points, plot_every, fold, eval_points=None, save_path='./result', file_name='train', save_as_img=True):
+    # plt.figure()
+    ax = plt.figure().gca()
+    # fig, ax = plt.subplots()
+    plt.title('%s %s fold loss' % (file_name, str(fold)))
+
+    # train loss
+    x1 = list(range(1, len(train_points)*plot_every+1, plot_every))
+    plt.plot(x1, train_points, label='train_loss')
+    
+    # valid loss
+    if eval_points is not None:
+        x2 = list(range(1, len(eval_points)*plot_every+1, plot_every))
+        plt.plot(x2, eval_points, label='valid_loss')
+
+    # add legend 
+    plt.legend()
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
     if save_as_img:
         plt.savefig(os.path.join(save_path, '%s_fold%d.png' % (file_name, fold)))

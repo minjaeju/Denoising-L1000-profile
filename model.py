@@ -24,8 +24,8 @@ class VanillaEncoder(nn.Module):
             [nn.Linear(self.hidden_dim[i], self.hidden_dim[i + 1]) for i in range(self.num_layer-1)])
         self.MLP_ft = nn.Linear(256,256)
 
-    def forward(self, exp, pos=None, neg=None, finetune = False):
-        if finetune == True:
+    def forward(self, exp, pos=None, neg=None, triplet = False):
+        if triplet == True:
             for i in range(self.num_layer-1):
                 exp = self.dropout(self.activation(self.MLP[i](exp)))
                 pos = self.dropout(self.activation(self.MLP[i](pos)))
@@ -87,8 +87,8 @@ class MJnetEN(nn.Module):
     def __init__(self):
         super(MJnetEN, self).__init__()
         self.profile_encoder = ProfileEncoder()
-    def forward(self, exp, pos=None, neg=None, finetune=False):
-        if finetune == True:
+    def forward(self, exp, pos=None, neg=None, triplet=False):
+        if triplet == True:
             anchor = self.profile_encoder(exp)
             positive = self.profile_encoder(pos)
             negative = self.profile_encoder(neg)

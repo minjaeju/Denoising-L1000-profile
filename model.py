@@ -55,38 +55,33 @@ class VanillaDecoder(nn.Module):
         init_hidden_he(self.MLP)
 
     def forward(self, exp):
-
         for i in range(self.num_layer):
             if i != self.num_layer - 1:
                 exp = self.dropout(self.activation(self.MLP[i](exp)))
-
             else:
                 exp = self.MLP[i](exp)
-
+                
         return exp
 
 class VanillaAE(nn.Module):
 
     def __init__(self):
         super(VanillaAE, self).__init__()
-
-        #self.profile = profile
         self.encoder = VanillaEncoder()
         self.decoder = VanillaDecoder()
         
     def forward(self, profile):
-
         profile_embed = self.encoder(profile)
         profile_recon = self.decoder(profile_embed)
 
         return profile_recon
     
 #MJnet Encoder    
-    
 class MJnetEN(nn.Module):
     def __init__(self):
         super(MJnetEN, self).__init__()
         self.profile_encoder = ProfileEncoder()
+        
     def forward(self, exp, pos=None, neg=None, triplet=False):
         if triplet == True:
             anchor = self.profile_encoder(exp)
@@ -109,6 +104,7 @@ class ProfileEncoder(nn.Module):
         self.MLP_profile = nn.ModuleList(
             [nn.Linear(self.hidden_state[i], self.hidden_state[i + 1]) for i in range(self.num_layer)])
         init_hidden_he(self.MLP_profile)
+        
     def forward(self, profile):
         for i in range(self.num_layer):
             if i != self.num_layer - 1:

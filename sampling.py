@@ -66,12 +66,3 @@ def get_posneg_samples(tensor, exp, lookup_df, samples, neg_dic, test=None):
         neg[i] = torch.tensor(exp[neg_idx])
 
     return pos, neg
-
-"""
-while True:
-                idx_shRNA_neg = torch.multinomial(torch.tensor(seed_similarity[idx_shRNA,:]+7), samples)
-                if idx_shRNA not in list(idx_shRNA_neg) and set(idx_shRNA_neg.tolist()) & set(shRNA_idx_indata) == set(idx_shRNA_neg.tolist()):
-                    break
-            shRNA_neg = [shRNA for shRNA, value in shRNA_dict.items() if value in idx_shRNA_neg]
-            neg_idx = random.sample(lookup[lookup['pert_mfc_id'].isin (shRNA_neg)].index.tolist(),samples)
-"""

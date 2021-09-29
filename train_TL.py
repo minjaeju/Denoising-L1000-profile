@@ -37,7 +37,7 @@ parser.add_argument('--finetune', default=True)
 parser.add_argument('--triplet', default=True)
 parser.add_argument('--k_folds', type=int, default=5,
                     help='number of folds for cross validation (default: 5)')
-parser.add_argument('--num_epochs', type=int, default=1,
+parser.add_argument('--num_epochs', type=int, default=100,
                     help='number of epochs (default: 500)')
 parser.add_argument('--batch_size', type=int, default=500,
                     help='size of batch (default: 100)')
@@ -48,6 +48,7 @@ parser.add_argument('--train_exp_path', default='./data/exp/exp_train.pkl',
                     help='path for train exp (default: ./data/exp/exp_train.pkl')
 parser.add_argument('--test_exp_path', default='./data/exp/exp_test.pkl',
                     help='path for test exp (default: ./data/exp/exp_test.pkl')
+
 parser.add_argument('--train_lookup_path', default='./data/lookup/lookup_train.csv',
                     help='path for train lookup (default: ./data/lookup/lookup_train.csv')
 parser.add_argument('--test_lookup_path', default='./data/lookup/lookup_test.csv',
@@ -60,15 +61,9 @@ parser.add_argument('--margin', type=int, default=0.3)
 #                    help='path for pretrained model')
 parser.add_argument('--model_path', default='./model/mjnet/base_double_triple_i1_mrr_best.pth',
                     help='path for pretrained model')
-parser.add_argument('--model_path_test', default='./model/mjnet/base_double_triple_i1_mrr_best.pth',
-                    help='path for pretrained model')
-#parser.add_argument('--model_path_test', default='./model/EN/210917-163635_0.3/',
-#                    help='path for pretrained model')
+parser.add_argument('--model_path_test', default='./model/EN/210928-192531_3_0.3ft/',
+                    help='path for finetuned model')
 
-#parser.add_argument('--shRNA_path', default='./data/shRNA/shRNA_processed.csv')
-#parser.add_argument('--shRNA_dict', default='./data/shRNA/RNA_dict.pkl')
-#parser.add_argument('--seed_similarity', default='./data/shRNA/seed_similarity_7mer.pkl')
-#parser.add_argument('--seed_dict', default='./data/shRNA/seed_dict_neg.pkl')
 parser.add_argument('--neg_dict', default='./data/neg_dict.pkl')
 parser.add_argument('--neg_dict_test', default='./data/neg_dict_test.pkl')
 
@@ -95,7 +90,7 @@ if __name__ == '__main__':
     
     print('test_mode:', args.test_mode)
     print('finetune:', args.finetune)
-    if args.finetune:
+    if args.finetune==True:
         print('pretrained model:', args.model_path)
     
     criterion = TripletLoss(args.margin)
@@ -121,8 +116,8 @@ if __name__ == '__main__':
             
             #model = VanillaEncoder().to(device)
             model = MJnetEN().to(device)
-            #model_path = f'{args.model_path_test}model_fold{fold}.pth'
-            model_path = args.model_path_test
+            model_path = f'{args.model_path_test}model_fold{fold}.pth'
+            #model_path = args.model_path_test
             checkpoint = torch.load(model_path)
             model.load_state_dict(checkpoint,strict=False)
             
@@ -138,40 +133,20 @@ if __name__ == '__main__':
                     cell.extend(tensor_list[3])
                     gene.extend(tensor_list[4])
                     index.extend(tensor_list[5])
-                    """
-                    pos, neg = get_posneg_samples(tensor_list, test_exp, args.test_lookup_path, args.neg_samples)
-                    
-                    print('-------- Calculating TripletLoss --------')
-                    """
+
                     anchor_embed = model(tensor_list[0]).cpu().detach().numpy()
                     np_embed[k:k+anchor_embed.shape[0],:] = anchor_embed
                     k = k+anchor_embed.shape[0]
-                    """
-                    for j in tqdm(range(args.neg_samples)):
-                        losses = criterion(anchor_embed, pos_embed[:,j,:], neg_embed[:,j,:])   
-                        test_loss += losses.item()
-                    """    
+
                 labels = {'shRNA' : shRNA, 'cell' : cell, 'gene' : gene, 'index' : index}
                     
-                with open(f'./result/embedding/embedding_mj{fold}.pkl', 'wb') as f:
+                with open(f'./result/embedding/embedding_mj_ft{fold}.pkl', 'wb') as f:
                     pickle.dump(np_embed, f)
-                with open(f'./result/embedding/labels_mj{fold}.pkl', 'wb') as f:
-                    pickle.dump(labels, f)    
-                """
-                print('test_loss of fold: %.4f' % (test_loss/len(testloader)))
-                print('-----------------------------------')
-                results[fold] = test_loss/len(testloader)
-            print(f'K-Fold CV Results of {k_folds} Folds')
-            print('-----------------------------------')
-            for f in range(fold+1):
-                print('[Fold %d] test loss: %.4f' % \
-                    (f, results[f]))
-            print('%d folds test loss: %.4f' \
-                % ((fold+1), sum(results.values())/len(results.items())))
-                """
+                with open(f'./result/embedding/labels_mj_ft{fold}.pkl', 'wb') as f:
+                    pickle.dump(labels, f)
     
     else:
-        if args.finetune:
+        if args.finetune==True:
             result_img_name = 'finetune'
             save_model_path = f'./model/EN/{cur_date}_{args.neg_samples}_{args.margin}ft/'
             save_result_path = f'./result/EN/{cur_date}_{args.neg_samples}_{args.margin}ft/'
@@ -236,11 +211,10 @@ if __name__ == '__main__':
             validloader = get_loader(train_dataset, valid_subsampler, batch_size)
             
             
-            #model = VanillaEncoder().to(device)
-            model = MJnetEN()
-            
-            if args.finetune:
-                print('000000000000000000000000000000')
+            model = VanillaEncoder()
+            #model = MJnetEN()
+            model = model.to(device)
+            if args.finetune==True:
                 model_path = args.model_path
                 #model_path = f'{args.model_path}model_fold{fold}.pth'
                 checkpoint = torch.load(model_path)
@@ -249,66 +223,59 @@ if __name__ == '__main__':
                     param.requires_grad = False
             
                 model.profile_encoder.MLP_profile[3] = nn.Linear(512,256)
-        
-                model = model.to(device)
                 optimizer = torch.optim.Adam(model.profile_encoder.MLP_profile[3].parameters(), lr=learning_rate)
             else:
                 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
                 
             for epoch in range(1, num_epochs+1):
             
-                loss = 0.0
+                tloss = 0.0
                 vloss = 0.0
-                losses = []
+                tlosses = []
                 vlosses = []
             
                 model.train()
-            
-                for i, data in enumerate(tqdm(trainloader, 0)):
+                for i, data in enumerate(trainloader, 0):
                     tensor_list = data
                     pos, neg = get_posneg_samples(tensor_list, train_exp, train_lookup, args.neg_samples, neg_dic)
-                
-                    #print('-------- Calculating TripletLoss --------')
-                                    
+
                     anchor_embed, pos_embed, neg_embed = model(tensor_list[0], pos.to(device), neg.to(device), args.triplet)
                     losses = criterion(anchor_embed, pos_embed, neg_embed)
-                    #print('BatchIndex:', i, 'TLoss:', round(losses.item(),4))
                     losses.backward()
                     optimizer.step()
                   
-                    loss += losses.item()
+                    tloss += losses.item()
                     tloss_plot += losses.item()
-                                    
+                    tlosses.append(losses.item())
+                
+                # avg(loss) per epoch
+                avg_loss = np.average(tlosses)
+                avg_losses.append(avg_loss)
+                # Plot
+                avg_tloss_plot = tloss_plot / (args.plot_every*(i+1))         
+                
                 model.eval()
-
                 for i, data in enumerate(validloader, 0):
                     tensor_list = data
                     pos, neg = get_posneg_samples(tensor_list, train_exp, train_lookup, args.neg_samples, neg_dic)
-                
-                    #print('-------- Calculating TripletLoss --------')
-                    
+
                     anchor_embed, pos_embed, neg_embed = model(tensor_list[0], pos.to(device),neg.to(device),args.triplet)
 
                     losses = criterion(anchor_embed, pos_embed, neg_embed)   
-                    
                     vloss += losses.item()
                     vloss_plot += losses.item()
                     vlosses.append(losses.item())
                     
-                    # avg(loss) per epoch
-                    avg_loss = np.average(losses.cpu().detach().numpy())
-                    avg_losses.append(avg_loss)
+                # avg(loss) per epoch    
                 avg_vloss = np.average(vlosses)
                 avg_vlosses.append(avg_vloss)
-            
+                #plot
+                avg_vloss_plot = vloss_plot / (args.plot_every*(i+1))
+                #import pdb; pdb.set_trace()
                 # Save model
                 save_path = save_model_path + f'/model_fold{fold}.pth'
                 torch.save(model.state_dict(), save_path)
-
-                # Plot
-                avg_tloss_plot = tloss_plot / (args.plot_every*(i+1))
-                avg_vloss_plot = vloss_plot / (args.plot_every*(i+1))
-                #import pdb; pdb.set_trace()
+                
                 if epoch % args.print_every == 0:
                     print('Epoch %d / %d (%d%%) train loss: %.4f, valid loss: %.4f' \
                         % (epoch, num_epochs, epoch / num_epochs * 100, avg_loss, avg_vloss))
@@ -318,7 +285,7 @@ if __name__ == '__main__':
                     tloss_plot = 0.0
                     vloss_plot_list.append(avg_vloss_plot)
                     vloss_plot = 0.0
-
+            #import pdb; pdb.set_trace()
             show_plot(tloss_plot_list, args.plot_every, fold, eval_points=vloss_plot_list, save_path=save_result_path, file_name=result_img_name)
               
             print('-------- Starting testing --------')
@@ -332,9 +299,7 @@ if __name__ == '__main__':
                 for i, data in enumerate(testloader, 0):
                     tensor_list = data
                     pos, neg = get_posneg_samples(tensor_list, test_exp, test_lookup, args.neg_samples, neg_dic_test, test=True)
-                
-                    #print('-------- Calculating TripletLoss --------')
-                  
+
                     anchor_embed, pos_embed, neg_embed = model(tensor_list[0], pos.to(device),neg.to(device),args.triplet)
                 
                     losses = criterion(anchor_embed, pos_embed, neg_embed)   
